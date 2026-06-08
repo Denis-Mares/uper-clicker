@@ -1,252 +1,223 @@
-let lilky = 0;
-let silaKliknuti = 1;
-let pasivniPrijem = 0;
-let KliknutiMult = 1;
-let PasivniMult = 1;
+// --- Globální stav hry ---
+let score = 0;
+let clickPower = 1;
+let passiveIncome = 0;
+let clickMultiplier = 1;
+let passiveMultiplier = 1;
 
-// Výchozí ceny budov
-let cenaFarmar = 10;
-let cenaZahrada = 50;
-let cenaPlantaze = 1000;
-let cenaSklenik = 5000;
-let cenaLaborator = 50000;
-let cenaMonopol = 500000;
+// Ceny upgradů uložené v objektu pro čistší kód
+const prices = {
+    farmer: 10,
+    garden: 50,
+    plantation: 1000,
+    greenhouse: 5000,
+    lab: 50000,
+    monopoly: 500000,
+    watering: 10000,
+    hoe: 250,
+    fertilizer: 2500
+};
 
-// Výchozí ceny technologií
-let cenaZalivani = 10000;
-let cenaMotyky = 250;
-let cenaHnojivo = 2500;
-
-// Načtení dat z localStorage
-const ulozenaData = JSON.parse(localStorage.getItem("lilekClickerSave"));
-if (ulozenaData) {
-    lilky = ulozenaData.lilky || 0;
-    silaKliknuti = ulozenaData.silaKliknuti || 1;
-    pasivniPrijem = ulozenaData.pasivniPrijem || 0;
-    KliknutiMult = ulozenaData.KliknutiMult || 1;
-    PasivniMult = ulozenaData.PasivniMult || 1;
+// --- Načítání uložené pozice ---
+const savedState = JSON.parse(localStorage.getItem("lilekClickerSave"));
+if (savedState) {
+    score = savedState.lilky ?? 0;
+    clickPower = savedState.silaKliknuti ?? 1;
+    passiveIncome = savedState.pasivniPrijem ?? 0;
+    clickMultiplier = savedState.KliknutiMult ?? 1;
+    passiveMultiplier = savedState.PasivniMult ?? 1;
     
-    cenaFarmar = ulozenaData.cenaFarmar || 10;
-    cenaZahrada = ulozenaData.cenaZahrada || 50;
-    cenaPlantaze = ulozenaData.cenaPlantaze || 1000;
-    cenaSklenik = ulozenaData.cenaSklenik || 5000;
-    cenaLaborator = ulozenaData.cenaLaborator || 50000;
-    cenaMonopol = ulozenaData.cenaMonopol || 500000;
-    
-    cenaZalivani = ulozenaData.cenaZalivani || 10000;
-    cenaMotyky = ulozenaData.cenaMotyky || 250;
-    cenaHnojivo = ulozenaData.cenaHnojivo || 2500;
+    prices.farmer = savedState.cenaFarmar ?? 10;
+    prices.garden = savedState.cenaZahrada ?? 50;
+    prices.plantation = savedState.cenaPlantaze ?? 1000;
+    prices.greenhouse = savedState.cenaSklenik ?? 5000;
+    prices.lab = savedState.cenaLaborator ?? 50000;
+    prices.monopoly = savedState.cenaMonopol ?? 500000;
+    prices.watering = savedState.cenaZalivani ?? 10000;
+    prices.hoe = savedState.cenaMotyky ?? 250;
+    prices.fertilizer = savedState.cenaHnojivo ?? 2500;
 }
 
-// Propojení HTML elementů s JS
-const textSkore = document.getElementById("skore");
-const textPasivniPrijem = document.getElementById("pasivni-prijem-text");
-const textPasivniPrijemMult = document.getElementById("pasivni-prijem-text-mult");
-const textKlik = document.getElementById("klik-text");
-const textKlikMult = document.getElementById("klik-text-mult");
+// --- DOM Elementy ---
+const scoreDisplay = document.getElementById("skore");
+const passiveDisplay = document.getElementById("pasivni-prijem-text");
+const passiveMultDisplay = document.getElementById("pasivni-prijem-text-mult");
+const clickDisplay = document.getElementById("klik-text");
+const clickMultDisplay = document.getElementById("klik-text-mult");
 
-const btnLilek = document.getElementById("btn-lilek");
-const btnFarmar = document.getElementById("btn-farmar");
-const btnZahrada = document.getElementById("btn-zahrada");
-const btnPlantaz = document.getElementById("btn-plantaz");
-const btnSklenik = document.getElementById("btn-sklenik");
-const btnLaborator = document.getElementById("btn-laborator");
-const btnMonopol = document.getElementById("btn-monopol");
+const el = (id) => document.getElementById(id);
 
-const btnZalivani = document.getElementById("btn-zalivani");
-const btnMotyky = document.getElementById("btn-motyky");
-const btnHnojivo = document.getElementById("btn-hnojivo");
-const btnReset = document.getElementById("btn-reset");
+const nodes = {
+    trigger: el("btn-lilek"),
+    farmer: el("btn-farmar"),
+    garden: el("btn-zahrada"),
+    plantation: el("btn-plantaz"),
+    greenhouse: el("btn-sklenik"),
+    lab: el("btn-laborator"),
+    monopoly: el("btn-monopol"),
+    watering: el("btn-zalivani"),
+    hoe: el("btn-motyky"),
+    fertilizer: el("btn-hnojivo"),
+    reset: el("btn-reset")
+};
 
-// Funkce pro ukládání pokroku
-function ulozHru() {
-    const dataProUlozeni = {
-        lilky: lilky,
-        silaKliknuti: silaKliknuti,
-        pasivniPrijem: pasivniPrijem,
-        cenaFarmar: cenaFarmar,
-        cenaZahrada: cenaZahrada,
-        cenaPlantaze: cenaPlantaze,
-        cenaSklenik: cenaSklenik,
-        cenaLaborator: cenaLaborator,
-        cenaMonopol: cenaMonopol,
-        cenaZalivani: cenaZalivani,
-        cenaMotyky: cenaMotyky,
-        cenaHnojivo: cenaHnojivo,
-        KliknutiMult: KliknutiMult,
-        PasivniMult: PasivniMult
+// --- Perzistence dat ---
+const saveGameData = () => {
+    const payload = {
+        lilky: score,
+        silaKliknuti: clickPower,
+        pasivniPrijem: passiveIncome,
+        cenaFarmar: prices.farmer,
+        cenaZahrada: prices.garden,
+        cenaPlantaze: prices.plantation,
+        cenaSklenik: prices.greenhouse,
+        cenaLaborator: prices.lab,
+        cenaMonopol: prices.monopoly,
+        cenaZalivani: prices.watering,
+        cenaMotyky: prices.hoe,
+        cenaHnojivo: prices.fertilizer,
+        KliknutiMult: clickMultiplier,
+        PasivniMult: passiveMultiplier
     };
-    localStorage.setItem("lilekClickerSave", JSON.stringify(dataProUlozeni));
-}
+    localStorage.setItem("lilekClickerSave", JSON.stringify(payload));
+};
 
-// Funkce pro překreslení textů na obrazovce
-function aktualizujUI() {
-    // Math.floor a Math.round řeší zaokrouhlení, aby se nezobrazovala dlouhá desetinná čísla
-    textSkore.textContent = Math.floor(lilky);
-    textPasivniPrijem.textContent = Math.round(pasivniPrijem);
-    textPasivniPrijemMult.textContent = Math.round(PasivniMult * 10) / 10;
-    textKlik.textContent = Math.round(silaKliknuti);
-    textKlikMult.textContent = Math.round(KliknutiMult * 10) / 10;
+// --- Renderování UI ---
+const renderUI = () => {
+    scoreDisplay.textContent = Math.floor(score);
+    passiveDisplay.textContent = Math.round(passiveIncome);
+    passiveMultDisplay.textContent = Math.round(passiveMultiplier * 10) / 10;
+    clickDisplay.textContent = Math.round(clickPower);
+    clickMultDisplay.textContent = Math.round(clickMultiplier * 10) / 10;
     
-    btnFarmar.textContent = `🧑🏿‍🌾 Najmout Farmáře (Cena: ${cenaFarmar} lilků)`;
-    btnZahrada.textContent = `🌲 Koupit Zahradu (Cena: ${cenaZahrada} lilků)`;
-    btnPlantaz.textContent = `🏞️ Koupit Plantáž (Cena: ${cenaPlantaze} lilků)`;
-    btnSklenik.textContent = `🏢 Koupit Skleník (Cena: ${cenaSklenik} lilků)`;
-    btnLaborator.textContent = `🧬 Genetická laboratoř (Cena: ${cenaLaborator} lilků)`;
-    btnMonopol.textContent = `🏢 Lilekový monopol (Cena: ${cenaMonopol} lilků)`;
+    nodes.farmer.textContent = `🧑🏿‍🌾 Najmout Farmáře (Cena: ${prices.farmer} lilků)`;
+    nodes.garden.textContent = `🌲 Koupit Zahradu (Cena: ${prices.garden} lilků)`;
+    nodes.plantation.textContent = `🏞️ Koupit Plantáž (Cena: ${prices.plantation} lilků)`;
+    nodes.greenhouse.textContent = `🏢 Koupit Skleník (Cena: ${prices.greenhouse} lilků)`;
+    nodes.lab.textContent = `🧬 Genetická laboratoř (Cena: ${prices.lab} lilků)`;
+    nodes.monopoly.textContent = `🏢 Lilekový monopol (Cena: ${prices.monopoly} lilků)`;
     
-    btnZalivani.textContent = `💦 Koupit Zalévání (Cena: ${cenaZalivani} lilků, dává +20% k síle kliku)`;
-    btnMotyky.textContent = `⛏️ Ostré motyky (Cena: ${cenaMotyky} lilků, +2 k síle kliku)`;
-    btnHnojivo.textContent = `🧪 Prémiové hnojivo (Cena: ${cenaHnojivo} lilků, +15 % k celkovému příjmu)`;
-}
+    nodes.watering.textContent = `💦 Koupit Zalévání (Cena: ${prices.watering} lilků, dává +20% k síle kliku)`;
+    nodes.hoe.textContent = `⛏️ Ostré motyky (Cena: ${prices.hoe} lilků, +2 k síle kliku)`;
+    nodes.fertilizer.textContent = `🧪 Prémiové hnojivo (Cena: ${prices.fertilizer} lilků, +15 % k celkovému příjmu)`;
+};
 
-// Hlavní klikací tlačítko
-btnLilek.addEventListener("click", function() {
-    lilky = lilky+(silaKliknuti*KliknutiMult);
-    aktualizujUI();
-    ulozHru();
-});
-
-// --- SEKCE BUDOV ---
-btnFarmar.addEventListener("click", function() {
-    if (lilky >= cenaFarmar) {
-        lilky -= cenaFarmar;
-        silaKliknuti += 1; // Farmář dává +1 k aktivnímu kliku
-        cenaFarmar = Math.round(cenaFarmar * 1.15);
-        aktualizujUI();
-        ulozHru();
-    } else {
-        alert("Nedostatek prostředků na farmáře!");
+// --- Pomocná funkce pro nákup položek ---
+const processPurchase = (key, costKey, multi, statUpdate, isMultiplier = false) => {
+    if (score >= prices[costKey]) {
+        score -= prices[costKey];
+        if (isMultiplier) {
+            if (costKey === 'watering') clickMultiplier *= multi;
+            if (costKey === 'fertilizer') passiveMultiplier *= multi;
+        } else {
+            if (key === 'click') clickPower += statUpdate;
+            if (key === 'passive') passiveIncome += statUpdate;
+        }
+        prices[costKey] = Math.round(prices[costKey] * multi);
+        renderUI();
+        saveGameData();
+        return true;
     }
+    return false;
+};
+
+// --- Handlery událostí ---
+nodes.trigger.addEventListener("click", () => {
+    score += (clickPower * clickMultiplier);
+    renderUI();
+    saveGameData();
 });
 
-btnZahrada.addEventListener("click", function() {
-    if (lilky >= cenaZahrada) {
-        lilky -= cenaZahrada;
-        pasivniPrijem += 1; // +1 lilek/s
-        cenaZahrada = Math.round(cenaZahrada * 1.15);
-        aktualizujUI();
-        ulozHru();
-    } else {
-        alert("Nedostatek prostředků na zahradu!");
-    }
+nodes.farmer.addEventListener("click", () => {
+    if (!processPurchase('click', 'farmer', 1.15, 1)) alert("Nedostatek prostředků na farmáře!");
 });
 
-btnPlantaz.addEventListener("click", function() {
-    if (lilky >= cenaPlantaze) {
-        lilky -= cenaPlantaze;
-        pasivniPrijem += 10; // +10 lilků/s
-        cenaPlantaze = Math.round(cenaPlantaze * 1.15);
-        aktualizujUI();
-        ulozHru();
-    } else {
-        alert("Nedostatek prostředků na plantáž!");
-    }
+nodes.garden.addEventListener("click", () => {
+    if (!processPurchase('passive', 'garden', 1.15, 1)) alert("Nedostatek prostředků na zahradu!");
 });
 
-btnSklenik.addEventListener("click", function() {
-    if (lilky >= cenaSklenik) {
-        lilky -= cenaSklenik;
-        pasivniPrijem += 50; // +50 lilků/s
-        cenaSklenik = Math.round(cenaSklenik * 1.15);
-        aktualizujUI();
-        ulozHru();
-    } else {
-        alert("Nedostatek prostředků na skleník!");
-    }
+nodes.plantation.addEventListener("click", () => {
+    if (!processPurchase('passive', 'plantation', 1.15, 1)) alert("Nedostatek prostředků na plantáž!");
 });
 
-btnLaborator.addEventListener("click", function() {
-    if (lilky >= cenaLaborator) {
-        lilky -= cenaLaborator;
-        pasivniPrijem += 500; // +500 lilků/s
-        cenaLaborator = Math.round(cenaLaborator * 1.15);
-        aktualizujUI();
-        ulozHru();
-    } else {
-        alert("Nedostatek prostředků na genetickou laboratoř!");
-    }
+nodes.greenhouse.addEventListener("click", () => {
+    if (!processPurchase('passive', 'greenhouse', 1.15, 50)) alert("Nedostatek prostředků na skleník!");
 });
 
-btnMonopol.addEventListener("click", function() {
-    if (lilky >= cenaMonopol) {
-        lilky -= cenaMonopol;
-        pasivniPrijem += 5000; // +5000 lilků/s
-        cenaMonopol = Math.round(cenaMonopol * 1.15);
-        aktualizujUI();
-        ulozHru();
-    } else {
-        alert("Nedostatek prostředků na lilekový monopol!");
-    }
+nodes.lab.addEventListener("click", () => {
+    if (!processPurchase('passive', 'lab', 1.15, 500)) alert("Nedostatek prostředků na genetickou laboratoř!");
 });
 
-// --- SEKCE TECHNOLOGIÍ A VYLEPŠENÍ ---
-btnZalivani.addEventListener("click", function() {
-    if (lilky >= cenaZalivani) {
-        lilky -= cenaZalivani;
-        KliknutiMult = KliknutiMult * 1.2; // Násobí tvou sílu kliku 1.2x
-        cenaZalivani = Math.round(cenaZalivani * 1.5);
-        aktualizujUI();
-        ulozHru();
+nodes.monopoly.addEventListener("click", () => {
+    if (!processPurchase('passive', 'monopoly', 1.15, 5000)) alert("Nedostatek prostředků na lilekový monopol!");
+});
+
+nodes.watering.addEventListener("click", () => {
+    if (score >= prices.watering) {
+        score -= prices.watering;
+        clickMultiplier *= 1.2;
+        prices.watering = Math.round(prices.watering * 1.5);
+        renderUI();
+        saveGameData();
     } else {
         alert("Nedostatek prostředků na zalévání!");
     }
 });
 
-btnMotyky.addEventListener("click", function() {
-    if (lilky >= cenaMotyky) {
-        lilky -= cenaMotyky;
-        silaKliknuti += 2; // Přičte fixně +2 k síle kliku
-        cenaMotyky = Math.round(cenaMotyky * 1.4);
-        aktualizujUI();
-        ulozHru();
+nodes.hoe.addEventListener("click", () => {
+    if (score >= prices.hoe) {
+        score -= prices.hoe;
+        clickPower += 2;
+        prices.hoe = Math.round(prices.hoe * 1.4);
+        renderUI();
+        saveGameData();
     } else {
         alert("Nedostatek prostředků na ostré motyky!");
     }
 });
 
-btnHnojivo.addEventListener("click", function() {
-    if (lilky >= cenaHnojivo) {
-        lilky -= cenaHnojivo;
-        PasivniMult = PasivniMult * 1.15; // Zvýší veškerý pasivní příjem o 15 %
-        cenaHnojivo = Math.round(cenaHnojivo * 1.6);
-        aktualizujUI();
-        ulozHru();
+nodes.fertilizer.addEventListener("click", () => {
+    if (score >= prices.fertilizer) {
+        score -= prices.fertilizer;
+        passiveMultiplier *= 1.15;
+        prices.fertilizer = Math.round(prices.fertilizer * 1.6);
+        renderUI();
+        saveGameData();
     } else {
         alert("Nedostatek prostředků na prémiové hnojivo!");
     }
 });
 
-// Reset hry s potvrzovacím oknem
-btnReset.addEventListener("click", function() {
+// --- Reset hry ---
+nodes.reset.addEventListener("click", () => {
     if (confirm("Opravdu chceš resetovat celou hru a přijít o veškerý pokrok?")) {
         localStorage.removeItem("lilekClickerSave");
-        lilky = 0;
-        silaKliknuti = 1;
-        KliknutiMult = 1;
-        pasivniPrijem = 0;
-        PasivniMult = 1;
-        cenaFarmar = 10;
-        cenaZahrada = 50;
-        cenaPlantaze = 1000;
-        cenaSklenik = 5000;
-        cenaLaborator = 50000;
-        cenaMonopol = 500000;
-        cenaZalivani = 10000;
-        cenaMotyky = 250;
-        cenaHnojivo = 2500;
-        aktualizujUI();
+        score = 0;
+        clickPower = 1;
+        clickMultiplier = 1;
+        passiveIncome = 0;
+        passiveMultiplier = 1;
+        prices.farmer = 10;
+        prices.garden = 50;
+        prices.plantation = 1000;
+        prices.greenhouse = 5000;
+        prices.lab = 50000;
+        prices.monopoly = 500000;
+        prices.watering = 10000;
+        prices.hoe = 250;
+        prices.fertilizer = 2500;
+        renderUI();
     }
 });
 
-// Interval běžící na pozadí (každou sekundu přičte pasivní příjem)
-setInterval(function() {
-    if (pasivniPrijem > 0) {
-        lilky = lilky+(pasivniPrijem*PasivniMult);
-        aktualizujUI();
-        ulozHru();
+// --- Herní smyčka ---
+setInterval(() => {
+    if (passiveIncome > 0) {
+        score += (passiveIncome * passiveMultiplier);
+        renderUI();
+        saveGameData();
     }
 }, 1000);
 
-// Spuštění aktualizace UI ihned po načtení stránky
-aktualizujUI();
+// První inicializace
+renderUI();
