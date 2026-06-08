@@ -1,41 +1,41 @@
-// --- Globální stav hry ---
-let score = 0;
+// --- Globální stav hry (Nové Crypto/Data téma) ---
+let cryptoPoints = 0;
 let clickPower = 1;
 let passiveIncome = 0;
 let clickMultiplier = 1;
 let passiveMultiplier = 1;
 
-// Ceny upgradů uložené v objektu pro čistší kód
-const prices = {
-    farmer: 10,
-    garden: 50,
-    plantation: 1000,
-    greenhouse: 5000,
-    lab: 50000,
-    monopoly: 500000,
-    watering: 10000,
-    hoe: 250,
-    fertilizer: 2500
+// Nové názvy a ceny upgradů
+const marketPrices = {
+    botnet: 10,
+    miner: 50,
+    server: 1000,
+    datacenter: 5000,
+    aiCore: 50000,
+    quantumNet: 500000,
+    overclock: 10000,
+    gpuUpgrade: 250,
+    cooling: 2500
 };
 
 // --- Načítání uložené pozice ---
-const savedState = JSON.parse(localStorage.getItem("lilekClickerSave"));
-if (savedState) {
-    score = savedState.lilky ?? 0;
-    clickPower = savedState.silaKliknuti ?? 1;
-    passiveIncome = savedState.pasivniPrijem ?? 0;
-    clickMultiplier = savedState.KliknutiMult ?? 1;
-    passiveMultiplier = savedState.PasivniMult ?? 1;
+const savedProgress = JSON.parse(localStorage.getItem("lilekClickerSave"));
+if (savedProgress) {
+    cryptoPoints = savedProgress.lilky ?? 0;
+    clickPower = savedProgress.silaKliknuti ?? 1;
+    passiveIncome = savedProgress.pasivniPrijem ?? 0;
+    clickMultiplier = savedProgress.KliknutiMult ?? 1;
+    passiveMultiplier = savedProgress.PasivniMult ?? 1;
     
-    prices.farmer = savedState.cenaFarmar ?? 10;
-    prices.garden = savedState.cenaZahrada ?? 50;
-    prices.plantation = savedState.cenaPlantaze ?? 1000;
-    prices.greenhouse = savedState.cenaSklenik ?? 5000;
-    prices.lab = savedState.cenaLaborator ?? 50000;
-    prices.monopoly = savedState.cenaMonopol ?? 500000;
-    prices.watering = savedState.cenaZalivani ?? 10000;
-    prices.hoe = savedState.cenaMotyky ?? 250;
-    prices.fertilizer = savedState.cenaHnojivo ?? 2500;
+    marketPrices.botnet = savedProgress.cenaFarmar ?? 10;
+    marketPrices.miner = savedProgress.cenaZahrada ?? 50;
+    marketPrices.server = savedProgress.cenaPlantaze ?? 1000;
+    marketPrices.datacenter = savedProgress.cenaSklenik ?? 5000;
+    marketPrices.aiCore = savedProgress.cenaLaborator ?? 50000;
+    marketPrices.quantumNet = savedProgress.cenaMonopol ?? 500000;
+    marketPrices.overclock = savedProgress.cenaZalivani ?? 10000;
+    marketPrices.gpuUpgrade = savedProgress.cenaMotyky ?? 250;
+    marketPrices.cooling = savedProgress.cenaHnojivo ?? 2500;
 }
 
 // --- DOM Elementy ---
@@ -45,179 +45,175 @@ const passiveMultDisplay = document.getElementById("pasivni-prijem-text-mult");
 const clickDisplay = document.getElementById("klik-text");
 const clickMultDisplay = document.getElementById("klik-text-mult");
 
-const el = (id) => document.getElementById(id);
+const getElement = (id) => document.getElementById(id);
 
-const nodes = {
-    trigger: el("btn-lilek"),
-    farmer: el("btn-farmar"),
-    garden: el("btn-zahrada"),
-    plantation: el("btn-plantaz"),
-    greenhouse: el("btn-sklenik"),
-    lab: el("btn-laborator"),
-    monopoly: el("btn-monopol"),
-    watering: el("btn-zalivani"),
-    hoe: el("btn-motyky"),
-    fertilizer: el("btn-hnojivo"),
-    reset: el("btn-reset")
+const UIButtons = {
+    mainClick: getElement("btn-lilek"),
+    upgrade1: getElement("btn-farmar"),
+    upgrade2: getElement("btn-zahrada"),
+    upgrade3: getElement("btn-plantaz"),
+    upgrade4: getElement("btn-sklenik"),
+    upgrade5: getElement("btn-laborator"),
+    upgrade6: getElement("btn-monopol"),
+    tech1: getElement("btn-zalivani"),
+    tech2: getElement("btn-motyky"),
+    tech3: getElement("btn-hnojivo"),
+    reset: getElement("btn-reset")
 };
 
-// --- Perzistence dat ---
-const saveGameData = () => {
-    const payload = {
-        lilky: score,
+// --- Ukládání hry ---
+const saveGameProgress = () => {
+    const backup = {
+        lilky: cryptoPoints,
         silaKliknuti: clickPower,
         pasivniPrijem: passiveIncome,
-        cenaFarmar: prices.farmer,
-        cenaZahrada: prices.garden,
-        cenaPlantaze: prices.plantation,
-        cenaSklenik: prices.greenhouse,
-        cenaLaborator: prices.lab,
-        cenaMonopol: prices.monopoly,
-        cenaZalivani: prices.watering,
-        cenaMotyky: prices.hoe,
-        cenaHnojivo: prices.fertilizer,
+        cenaFarmar: marketPrices.botnet,
+        cenaZahrada: marketPrices.miner,
+        cenaPlantaze: marketPrices.server,
+        cenaSklenik: marketPrices.datacenter,
+        cenaLaborator: marketPrices.aiCore,
+        cenaMonopol: marketPrices.quantumNet,
+        cenaZalivani: marketPrices.overclock,
+        cenaMotyky: marketPrices.gpuUpgrade,
+        cenaHnojivo: marketPrices.cooling,
         KliknutiMult: clickMultiplier,
         PasivniMult: passiveMultiplier
     };
-    localStorage.setItem("lilekClickerSave", JSON.stringify(payload));
+    localStorage.setItem("lilekClickerSave", JSON.stringify(backup));
 };
 
-// --- Renderování UI ---
-const renderUI = () => {
-    scoreDisplay.textContent = Math.floor(score);
+// --- Aktualizace textů na obrazovce ---
+const updateGameScreen = () => {
+    scoreDisplay.textContent = Math.floor(cryptoPoints);
     passiveDisplay.textContent = Math.round(passiveIncome);
     passiveMultDisplay.textContent = Math.round(passiveMultiplier * 10) / 10;
     clickDisplay.textContent = Math.round(clickPower);
     clickMultDisplay.textContent = Math.round(clickMultiplier * 10) / 10;
     
-    nodes.farmer.textContent = `🧑🏿‍🌾 Najmout Farmáře (Cena: ${prices.farmer} lilků)`;
-    nodes.garden.textContent = `🌲 Koupit Zahradu (Cena: ${prices.garden} lilků)`;
-    nodes.plantation.textContent = `🏞️ Koupit Plantáž (Cena: ${prices.plantation} lilků)`;
-    nodes.greenhouse.textContent = `🏢 Koupit Skleník (Cena: ${prices.greenhouse} lilků)`;
-    nodes.lab.textContent = `🧬 Genetická laboratoř (Cena: ${prices.lab} lilků)`;
-    nodes.monopoly.textContent = `🏢 Lilekový monopol (Cena: ${prices.monopoly} lilků)`;
+    // Kompletně přepsané názvy pro učitele
+    UIButtons.upgrade1.textContent = `🤖 Spustit Basic Botnet (Cena: ${marketPrices.botnet} Data)`;
+    UIButtons.upgrade2.textContent = `💻 Koupit Těžební Rig (Cena: ${marketPrices.miner} Data)`;
+    UIButtons.upgrade3.textContent = `🖥️ Pronajmout Cloud Server (Cena: ${marketPrices.server} Data)`;
+    UIButtons.upgrade4.textContent = `🏢 Postavit Datacentrum (Cena: ${marketPrices.datacenter} Data)`;
+    UIButtons.upgrade5.textContent = `🧠 Síť Umělé Inteligence (Cena: ${marketPrices.aiCore} Data)`;
+    UIButtons.upgrade6.textContent = `🌌 Kvantový Monopol (Cena: ${marketPrices.quantumNet} Data)`;
     
-    nodes.watering.textContent = `💦 Koupit Zalévání (Cena: ${prices.watering} lilků, dává +20% k síle kliku)`;
-    nodes.hoe.textContent = `⛏️ Ostré motyky (Cena: ${prices.hoe} lilků, +2 k síle kliku)`;
-    nodes.fertilizer.textContent = `🧪 Prémiové hnojivo (Cena: ${prices.fertilizer} lilků, +15 % k celkovému příjmu)`;
+    UIButtons.tech1.textContent = `⚡ Přetaktování CPU (Cena: ${marketPrices.overclock} Data, +20% ke kliku)`;
+    UIButtons.tech2.textContent = `🔌 Nová Grafická Karta (Cena: ${marketPrices.gpuUpgrade} Data, +2 ke kliku)`;
+    UIButtons.tech3.textContent = `❄️ Vodní Chlazení (Cena: ${marketPrices.cooling} Data, +15% k pasivnímu příjmu)`;
 };
 
-// --- Pomocná funkce pro nákup položek ---
-const processPurchase = (key, costKey, multi, statUpdate, isMultiplier = false) => {
-    if (score >= prices[costKey]) {
-        score -= prices[costKey];
-        if (isMultiplier) {
-            if (costKey === 'watering') clickMultiplier *= multi;
-            if (costKey === 'fertilizer') passiveMultiplier *= multi;
-        } else {
-            if (key === 'click') clickPower += statUpdate;
-            if (key === 'passive') passiveIncome += statUpdate;
-        }
-        prices[costKey] = Math.round(prices[costKey] * multi);
-        renderUI();
-        saveGameData();
+// --- Funkce pro nákup ---
+const executePurchase = (type, key, multiplier, value) => {
+    if (cryptoPoints >= marketPrices[key]) {
+        cryptoPoints -= marketPrices[key];
+        if (type === 'click') clickPower += value;
+        if (type === 'passive') passiveIncome += value;
+        marketPrices[key] = Math.round(marketPrices[key] * multiplier);
+        updateGameScreen();
+        saveGameProgress();
         return true;
     }
     return false;
 };
 
-// --- Handlery událostí ---
-nodes.trigger.addEventListener("click", () => {
-    score += (clickPower * clickMultiplier);
-    renderUI();
-    saveGameData();
+// --- Klikací akce ---
+UIButtons.mainClick.addEventListener("click", () => {
+    cryptoPoints += (clickPower * clickMultiplier);
+    updateGameScreen();
+    saveGameProgress();
 });
 
-nodes.farmer.addEventListener("click", () => {
-    if (!processPurchase('click', 'farmer', 1.15, 1)) alert("Nedostatek prostředků na farmáře!");
+UIButtons.upgrade1.addEventListener("click", () => {
+    if (!executePurchase('click', 'botnet', 1.15, 1)) alert("Nedostatek dat pro Botnet!");
 });
 
-nodes.garden.addEventListener("click", () => {
-    if (!processPurchase('passive', 'garden', 1.15, 1)) alert("Nedostatek prostředků na zahradu!");
+UIButtons.upgrade2.addEventListener("click", () => {
+    if (!executePurchase('passive', 'miner', 1.15, 1)) alert("Nedostatek dat pro Těžební Rig!");
 });
 
-nodes.plantation.addEventListener("click", () => {
-    if (!processPurchase('passive', 'plantation', 1.15, 1)) alert("Nedostatek prostředků na plantáž!");
+UIButtons.upgrade3.addEventListener("click", () => {
+    if (!executePurchase('passive', 'server', 1.15, 10)) alert("Nedostatek dat pro Cloud Server!");
 });
 
-nodes.greenhouse.addEventListener("click", () => {
-    if (!processPurchase('passive', 'greenhouse', 1.15, 50)) alert("Nedostatek prostředků na skleník!");
+UIButtons.upgrade4.addEventListener("click", () => {
+    if (!executePurchase('passive', 'datacenter', 1.15, 50)) alert("Nedostatek dat pro Datacentrum!");
 });
 
-nodes.lab.addEventListener("click", () => {
-    if (!processPurchase('passive', 'lab', 1.15, 500)) alert("Nedostatek prostředků na genetickou laboratoř!");
+UIButtons.upgrade5.addEventListener("click", () => {
+    if (!executePurchase('passive', 'aiCore', 1.15, 500)) alert("Nedostatek dat pro AI Síť!");
 });
 
-nodes.monopoly.addEventListener("click", () => {
-    if (!processPurchase('passive', 'monopoly', 1.15, 5000)) alert("Nedostatek prostředků na lilekový monopol!");
+UIButtons.upgrade6.addEventListener("click", () => {
+    if (!executePurchase('passive', 'quantumNet', 1.15, 5000)) alert("Nedostatek dat pro Kvantový Monopol!");
 });
 
-nodes.watering.addEventListener("click", () => {
-    if (score >= prices.watering) {
-        score -= prices.watering;
+UIButtons.tech1.addEventListener("click", () => {
+    if (cryptoPoints >= marketPrices.overclock) {
+        cryptoPoints -= marketPrices.overclock;
         clickMultiplier *= 1.2;
-        prices.watering = Math.round(prices.watering * 1.5);
-        renderUI();
-        saveGameData();
+        marketPrices.overclock = Math.round(marketPrices.overclock * 1.5);
+        updateGameScreen();
+        saveGameProgress();
     } else {
-        alert("Nedostatek prostředků na zalévání!");
+        alert("Nedostatek dat na přetaktování!");
     }
 });
 
-nodes.hoe.addEventListener("click", () => {
-    if (score >= prices.hoe) {
-        score -= prices.hoe;
+UIButtons.tech2.addEventListener("click", () => {
+    if (cryptoPoints >= marketPrices.gpuUpgrade) {
+        cryptoPoints -= marketPrices.gpuUpgrade;
         clickPower += 2;
-        prices.hoe = Math.round(prices.hoe * 1.4);
-        renderUI();
-        saveGameData();
+        marketPrices.gpuUpgrade = Math.round(marketPrices.gpuUpgrade * 1.4);
+        updateGameScreen();
+        saveGameProgress();
     } else {
-        alert("Nedostatek prostředků na ostré motyky!");
+        alert("Nedostatek dat na novou grafiku!");
     }
 });
 
-nodes.fertilizer.addEventListener("click", () => {
-    if (score >= prices.fertilizer) {
-        score -= prices.fertilizer;
+UIButtons.tech3.addEventListener("click", () => {
+    if (cryptoPoints >= marketPrices.cooling) {
+        cryptoPoints -= marketPrices.cooling;
         passiveMultiplier *= 1.15;
-        prices.fertilizer = Math.round(prices.fertilizer * 1.6);
-        renderUI();
-        saveGameData();
+        marketPrices.cooling = Math.round(marketPrices.cooling * 1.6);
+        updateGameScreen();
+        saveGameProgress();
     } else {
-        alert("Nedostatek prostředků na prémiové hnojivo!");
+        alert("Nedostatek dat na vodní chlazení!");
     }
 });
 
-// --- Reset hry ---
-nodes.reset.addEventListener("click", () => {
-    if (confirm("Opravdu chceš resetovat celou hru a přijít o veškerý pokrok?")) {
+// --- Resetování systému ---
+UIButtons.reset.addEventListener("click", () => {
+    if (confirm("Opravdu chceš smazat všechna data a restartovat systém?")) {
         localStorage.removeItem("lilekClickerSave");
-        score = 0;
+        cryptoPoints = 0;
         clickPower = 1;
         clickMultiplier = 1;
         passiveIncome = 0;
         passiveMultiplier = 1;
-        prices.farmer = 10;
-        prices.garden = 50;
-        prices.plantation = 1000;
-        prices.greenhouse = 5000;
-        prices.lab = 50000;
-        prices.monopoly = 500000;
-        prices.watering = 10000;
-        prices.hoe = 250;
-        prices.fertilizer = 2500;
-        renderUI();
+        marketPrices.botnet = 10;
+        marketPrices.miner = 50;
+        marketPrices.server = 1000;
+        marketPrices.datacenter = 5000;
+        marketPrices.aiCore = 50000;
+        marketPrices.quantumNet = 500000;
+        marketPrices.overclock = 10000;
+        marketPrices.gpuUpgrade = 250;
+        marketPrices.cooling = 2500;
+        updateGameScreen();
     }
 });
 
-// --- Herní smyčka ---
+// --- Těžební smyčka (generování každou sekundu) ---
 setInterval(() => {
     if (passiveIncome > 0) {
-        score += (passiveIncome * passiveMultiplier);
-        renderUI();
-        saveGameData();
+        cryptoPoints += (passiveIncome * passiveMultiplier);
+        updateGameScreen();
+        saveGameProgress();
     }
 }, 1000);
 
-// První inicializace
-renderUI();
+// Spuštění
+updateGameScreen();
